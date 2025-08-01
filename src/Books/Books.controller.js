@@ -15,6 +15,8 @@ class BooksController {
       setNewBookAuthor: action,
       handleAddBook: action,
       resetForm: action,
+      switchToAllBooks: action,
+      switchToPrivateBooks: action,
       isFormValid: computed
     });
   }
@@ -39,12 +41,20 @@ class BooksController {
     this.newBookAuthor = "";
   };
 
+  switchToAllBooks = () => {
+    this.store.uiStore.setBooksFilter("all");
+  };
+
+  switchToPrivateBooks = () => {
+    this.store.uiStore.setBooksFilter("private");
+  };
+
   get isFormValid() {
     return this.newBookName.trim() !== "" && this.newBookAuthor.trim() !== "";
   }
 
   get books() {
-    return this.store.books;
+    return this.store.filteredBooks;
   }
 
   get isLoading() {
@@ -56,7 +66,19 @@ class BooksController {
   }
 
   get booksCount() {
-    return this.store.booksCount;
+    return this.store.filteredBooks.length;
+  }
+
+  get isAllBooksSelected() {
+    return this.store.uiStore.isAllBooksSelected;
+  }
+
+  get isPrivateBooksSelected() {
+    return this.store.uiStore.isPrivateBooksSelected;
+  }
+
+  get privateBooksCount() {
+    return this.store.uiStore.privateBooksCount;
   }
 }
 

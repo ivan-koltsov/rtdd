@@ -1,4 +1,4 @@
-import { makeObservable, observable, action, runInAction } from "mobx";
+import { makeObservable, observable, action, runInAction, computed } from "mobx";
 import BooksRepository from "./Books.repository";
 
 class BooksStore {
@@ -6,8 +6,10 @@ class BooksStore {
   isLoading = false;
   error = null;
   booksRepository;
+  uiStore;
 
-  constructor() {
+  constructor(uiStore) {
+    this.uiStore = uiStore;
     this.booksRepository = new BooksRepository();
     makeObservable(this, {
       books: observable,
@@ -16,7 +18,9 @@ class BooksStore {
       loadBooks: action,
       addBook: action,
       setError: action,
-      clearError: action
+      clearError: action,
+      filteredBooks: computed,
+      privateBooksCount: computed
     });
   }
 
@@ -29,6 +33,8 @@ class BooksStore {
       runInAction(() => {
         this.books = books;
         this.isLoading = false;
+        // Update private books count in UI store
+        this.uiStore.setPrivateBooksCount(this.privateBooksCount);
       });
     } catch (error) {
       runInAction(() => {
@@ -71,6 +77,19 @@ class BooksStore {
 
   get booksCount() {
     return this.books.length;
+  }
+
+  get filteredBooks() {
+    if (this.uiStore.isAllBooksSelected) {
+      return this.books;
+    } else {
+      // Filter for private books (books owned by the current user)
+      return this.books.filter(book => book.ownerId === "postnikov");
+    }
+  }
+
+  get privateBooksCount() {
+    return this.books.filter(book => book.ownerId === "postnikov").length;
   }
 }
 

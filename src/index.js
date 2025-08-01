@@ -3,12 +3,15 @@ import ReactDOM from "react-dom";
 import { observer } from "mobx-react";
 
 import "./styles.css";
+import UIStore from "./Shared/UI.store";
 import BooksStore from "./Books/Books.store";
 import BooksController from "./Books/Books.controller";
 import BooksView from "./Books/Books.view";
+import HeaderView from "./Shared/Header.view";
 
 // Create store and controller instances
-const booksStore = new BooksStore();
+const uiStore = new UIStore();
+const booksStore = new BooksStore(uiStore);
 const booksController = new BooksController(booksStore);
 
 const App = observer(() => {
@@ -18,7 +21,10 @@ const App = observer(() => {
 
   return (
     <div className="App">
-      <BooksView controller={booksController} />
+      <HeaderView privateBooksCount={booksController.privateBooksCount} />
+      <main className="main-content">
+        <BooksView controller={booksController} />
+      </main>
     </div>
   );
 });

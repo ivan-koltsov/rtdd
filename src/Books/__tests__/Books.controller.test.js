@@ -1,5 +1,6 @@
 import BooksController from '../Books.controller';
 import BooksStore from '../Books.store';
+import UIStore from '../../Shared/UI.store';
 
 // Mock the store
 jest.mock('../Books.store');
@@ -7,13 +8,26 @@ jest.mock('../Books.store');
 describe('BooksController', () => {
   let controller;
   let mockStore;
+  let mockUIStore;
 
   beforeEach(() => {
+    mockUIStore = {
+      booksFilter: 'all',
+      privateBooksCount: 0,
+      setBooksFilter: jest.fn(),
+      setPrivateBooksCount: jest.fn(),
+      isAllBooksSelected: true,
+      isPrivateBooksSelected: false
+    };
+
     mockStore = {
       books: [],
+      filteredBooks: [],
       isLoading: false,
       error: null,
       booksCount: 0,
+      privateBooksCount: 0,
+      uiStore: mockUIStore,
       loadBooks: jest.fn(),
       addBook: jest.fn()
     };
@@ -111,13 +125,25 @@ describe('BooksController', () => {
     });
   });
 
+  describe('filter switching', () => {
+    it('should switch to all books', () => {
+      controller.switchToAllBooks();
+      expect(mockUIStore.setBooksFilter).toHaveBeenCalledWith('all');
+    });
+
+    it('should switch to private books', () => {
+      controller.switchToPrivateBooks();
+      expect(mockUIStore.setBooksFilter).toHaveBeenCalledWith('private');
+    });
+  });
+
   describe('store property accessors', () => {
-    it('should return books from store', () => {
+    it('should return filtered books from store', () => {
       const mockBooks = [
-        { name: 'Book 1', author: 'Author 1' },
-        { name: 'Book 2', author: 'Author 2' }
+        { name: 'Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'Book 2', author: 'Author 2', ownerId: 'other' }
       ];
-      mockStore.books = mockBooks;
+      mockStore.filteredBooks = mockBooks;
 
       expect(controller.books).toEqual(mockBooks);
     });
@@ -136,9 +162,29 @@ describe('BooksController', () => {
       expect(controller.error).toBe(errorMessage);
     });
 
-    it('should return books count from store', () => {
-      mockStore.booksCount = 5;
-      expect(controller.booksCount).toBe(5);
+    it('should return filtered books count from store', () => {
+      mockStore.filteredBooks = [
+        { name: 'Book 1', author: 'Author 1' },
+        { name: 'Book 2', author: 'Author 2' }
+      ];
+      expect(controller.booksCount).toBe(2);
+    });
+
+    it('should return filter state from UI store', () => {
+      mockUIStore.isAllBooksSelected = true;
+      mockUIStore.isPrivateBooksSelected = false;
+      expect(controller.isAllBooksSelected).toBe(true);
+      expect(controller.isPrivateBooksSelected).toBe(false);
+
+      mockUIStore.isAllBooksSelected = false;
+      mockUIStore.isPrivateBooksSelected = true;
+      expect(controller.isAllBooksSelected).toBe(false);
+      expect(controller.isPrivateBooksSelected).toBe(true);
+    });
+
+    it('should return private books count from UI store', () => {
+      mockUIStore.privateBooksCount = 15;
+      expect(controller.privateBooksCount).toBe(15);
     });
   });
 

@@ -1,5 +1,6 @@
 import BooksStore from '../Books.store';
 import BooksRepository from '../Books.repository';
+import UIStore from '../../Shared/UI.store';
 
 // Mock the repository
 jest.mock('../Books.repository');
@@ -7,6 +8,7 @@ jest.mock('../Books.repository');
 describe('BooksStore', () => {
   let store;
   let mockRepository;
+  let uiStore;
 
   beforeEach(() => {
     // Create a mock repository instance
@@ -18,15 +20,16 @@ describe('BooksStore', () => {
     // Mock the constructor to return our mock instance
     BooksRepository.mockImplementation(() => mockRepository);
     
-    store = new BooksStore();
+    uiStore = new UIStore();
+    store = new BooksStore(uiStore);
     jest.clearAllMocks();
   });
 
   describe('loadBooks', () => {
     it('should load books successfully', async () => {
       const mockBooks = [
-        { name: 'Test Book 1', author: 'Author 1' },
-        { name: 'Test Book 2', author: 'Author 2' }
+        { name: 'Test Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'Test Book 2', author: 'Author 2', ownerId: 'other' }
       ];
       
       mockRepository.getBooks.mockResolvedValue(mockBooks);
@@ -37,6 +40,20 @@ describe('BooksStore', () => {
       expect(store.isLoading).toBe(false);
       expect(store.error).toBe(null);
       expect(mockRepository.getBooks).toHaveBeenCalledTimes(1);
+    });
+
+    it('should update private books count in UI store after loading', async () => {
+      const mockBooks = [
+        { name: 'Test Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'Test Book 2', author: 'Author 2', ownerId: 'other' },
+        { name: 'Test Book 3', author: 'Author 3', ownerId: 'postnikov' }
+      ];
+      
+      mockRepository.getBooks.mockResolvedValue(mockBooks);
+
+      await store.loadBooks();
+
+      expect(uiStore.privateBooksCount).toBe(2);
     });
 
     it('should handle errors when loading books', async () => {
@@ -69,8 +86,8 @@ describe('BooksStore', () => {
   describe('addBook', () => {
     it('should add book successfully and reload books', async () => {
       const mockBooks = [
-        { name: 'Test Book 1', author: 'Author 1' },
-        { name: 'New Book', author: 'New Author' }
+        { name: 'Test Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'New Book', author: 'New Author', ownerId: 'postnikov' }
       ];
       
       mockRepository.addBook.mockResolvedValue(true);
@@ -109,6 +126,72 @@ describe('BooksStore', () => {
     });
   });
 
+  describe('filteredBooks', () => {
+    beforeEach(async () => {
+      const mockBooks = [
+        { name: 'Private Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'Public Book 1', author: 'Author 2', ownerId: 'other' },
+        { name: 'Private Book 2', author: 'Author 3', ownerId: 'postnikov' }
+      ];
+      
+      mockRepository.getBooks.mockResolvedValue(mockBooks);
+      await store.loadBooks();
+    });
+
+    it('should return all books when filter is set to "all"', () => {
+      uiStore.setBooksFilter('all');
+      expect(store.filteredBooks).toHaveLength(3);
+    });
+
+    it('should return only private books when filter is set to "private"', () => {
+      uiStore.setBooksFilter('private');
+      expect(store.filteredBooks).toHaveLength(2);
+      expect(store.filteredBooks.every(book => book.ownerId === 'postnikov')).toBe(true);
+    });
+
+    it('should update filtered books when filter changes', () => {
+      // Initially show all books
+      uiStore.setBooksFilter('all');
+      expect(store.filteredBooks).toHaveLength(3);
+
+      // Switch to private books
+      uiStore.setBooksFilter('private');
+      expect(store.filteredBooks).toHaveLength(2);
+
+      // Switch back to all books
+      uiStore.setBooksFilter('all');
+      expect(store.filteredBooks).toHaveLength(3);
+    });
+  });
+
+  describe('privateBooksCount', () => {
+    it('should return correct count of private books', async () => {
+      const mockBooks = [
+        { name: 'Private Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'Public Book 1', author: 'Author 2', ownerId: 'other' },
+        { name: 'Private Book 2', author: 'Author 3', ownerId: 'postnikov' },
+        { name: 'Public Book 2', author: 'Author 4', ownerId: 'another' }
+      ];
+      
+      mockRepository.getBooks.mockResolvedValue(mockBooks);
+      await store.loadBooks();
+
+      expect(store.privateBooksCount).toBe(2);
+    });
+
+    it('should return 0 when no private books exist', async () => {
+      const mockBooks = [
+        { name: 'Public Book 1', author: 'Author 1', ownerId: 'other' },
+        { name: 'Public Book 2', author: 'Author 2', ownerId: 'another' }
+      ];
+      
+      mockRepository.getBooks.mockResolvedValue(mockBooks);
+      await store.loadBooks();
+
+      expect(store.privateBooksCount).toBe(0);
+    });
+  });
+
   describe('error handling', () => {
     it('should set error correctly', () => {
       const errorMessage = 'Test error';
@@ -135,9 +218,9 @@ describe('BooksStore', () => {
   describe('computed properties', () => {
     it('should return correct books count', () => {
       store.books = [
-        { name: 'Book 1', author: 'Author 1' },
-        { name: 'Book 2', author: 'Author 2' },
-        { name: 'Book 3', author: 'Author 3' }
+        { name: 'Book 1', author: 'Author 1', ownerId: 'postnikov' },
+        { name: 'Book 2', author: 'Author 2', ownerId: 'other' },
+        { name: 'Book 3', author: 'Author 3', ownerId: 'postnikov' }
       ];
 
       expect(store.booksCount).toBe(3);

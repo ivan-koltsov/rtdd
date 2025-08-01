@@ -1,10 +1,13 @@
 import React from "react";
 import { observer } from "mobx-react";
+import BooksFilterView from "./BooksFilter.view";
 
 const BooksView = observer(({ controller }) => {
   return (
     <div className="books-container">
-      <h1>Books ({controller.booksCount})</h1>
+      <BooksFilterView controller={controller} />
+      
+      <h2>Books ({controller.booksCount})</h2>
       
       {controller.error && (
         <div className="error-message">
@@ -30,6 +33,9 @@ const BooksView = observer(({ controller }) => {
 const BookItem = ({ book }) => (
   <div className="book-item">
     <strong>{book.author}</strong>: {book.name}
+    {book.ownerId === "postnikov" && (
+      <span className="private-badge">Private</span>
+    )}
   </div>
 );
 
