@@ -16,5 +16,4 @@ class BooksRepository {
   };
 }
 
-const booksRepository = new BooksRepository();
-export default booksRepository;
+export default BooksRepository;
